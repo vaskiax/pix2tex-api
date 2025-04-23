@@ -1,0 +1,4 @@
+fastapi
+uvicorn
+pillow
+pix2tex @ git+https://github.com/lukas-blecher/LaTeX-OCR.git
