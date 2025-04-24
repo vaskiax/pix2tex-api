@@ -1,0 +1,48 @@
+name: Trigger auto deployment for env-raphael
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - '**'
+    - '.github/workflows/env-raphael-AutoDeployTrigger-9de856d1-da65-448d-b23b-cb21bfc7557f.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.ENVRAPHAEL_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.ENVRAPHAEL_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.ENVRAPHAEL_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          _dockerfilePathKey_: _dockerfilePath_
+          registryUrl: 
+          registryUsername: ${{ secrets.ENVRAPHAEL_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.ENVRAPHAEL_REGISTRY_PASSWORD }}
+          containerAppName: env-raphael
+          resourceGroup: raphael
+          imageToBuild: default/[parameters('containerAppName')]:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
