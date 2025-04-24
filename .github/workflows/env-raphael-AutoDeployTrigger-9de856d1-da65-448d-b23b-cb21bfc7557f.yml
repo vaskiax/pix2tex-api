@@ -1,48 +1,30 @@
-name: Trigger auto deployment for env-raphael
+name: Deploy to Azure Container App
 
-# When this action will be executed
 on:
-  # Automatically trigger it when detected changes in repo
   push:
-    branches: 
-      [ main ]
-    paths:
-    - '**'
-    - '.github/workflows/env-raphael-AutoDeployTrigger-9de856d1-da65-448d-b23b-cb21bfc7557f.yml'
-
-  # Allow manual trigger 
-  workflow_dispatch:      
+    branches:
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    permissions: 
-      id-token: write #This is required for requesting the OIDC JWT Token
-      contents: read #Required when GH token is used to authenticate with private repo
-
     steps:
-      - name: Checkout to the branch
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Azure Login
+      - name: Log in to Azure
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.ENVRAPHAEL_AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.ENVRAPHAEL_AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.ENVRAPHAEL_AZURE_SUBSCRIPTION_ID }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Build and push container image to registry
+      - name: Build and push container image
         uses: azure/container-apps-deploy-action@v2
         with:
-          appSourcePath: ${{ github.workspace }}
-          _dockerfilePathKey_: _dockerfilePath_
-          registryUrl: 
-          registryUsername: ${{ secrets.ENVRAPHAEL_REGISTRY_USERNAME }}
-          registryPassword: ${{ secrets.ENVRAPHAEL_REGISTRY_PASSWORD }}
-          containerAppName: env-raphael
+          imageToBuild: myregistry.azurecr.io/pix2tex-api:${{ github.sha }}
+          containerAppName: pix2tex-api
           resourceGroup: raphael
-          imageToBuild: default/[parameters('containerAppName')]:${{ github.sha }}
-          _buildArgumentsKey_: |
-            _buildArgumentsValues_
-
-
+          dockerfilePath: ./Dockerfile
+          targetPort: 8000
+          registryUrl: docker.io
+          location: westus2
+          ingress: external
